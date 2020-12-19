@@ -1668,6 +1668,7 @@ parameter ADDR_ACTION_TYPE = 32'h10;
 parameter ADDR_RELEASE_LEVEL = 32'h14;
 parameter ADDR_ACTION_INTERRUPT_SRC_ADDR_LO = 32'h18;
 parameter ADDR_ACTION_INTERRUPT_SRC_ADDR_HI = 32'h1C;
+parameter ADDR_ACT_REG_LAST_QUAD = 32'h17c;
 
 reg context_q;
 reg [31:0] interrupt_src_hi;
@@ -1824,10 +1825,12 @@ wire [0:0] dwrap_eth_TLAST;
 
 reg  [31:0] reg_rdata_hijack; //This will be ORed with the return data of hls_action
 wire [31:0] temp_s_axi_ctrl_reg_rdata;
+reg  [31:0] act_reg_last_quad;
 
  hls_action hls_action_0 (
     .ap_clk                       ( ap_clk                  ) ,
     .ap_rst_n                     ( hls_rst_n_q             ) ,
+    .act_reg_last_quad            ( act_reg_last_quad       ) ,
 `ifdef ENABLE_AXI_CARD_MEM
 `ifndef ENABLE_HBM
     .m_axi_card_mem0_araddr       (temp_card_mem0_araddr    ) ,
@@ -3527,6 +3530,14 @@ always @ (posedge ap_clk)
         context_q <= 0;
 //    else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr = ADDR_CTX_ID_REG )
 //        context_q <= s_axi_ctrl_reg_wdata;
+
+
+// Save last quad of action register
+always @ (posedge ap_clk)
+     if (~ap_rst_n)
+         act_reg_last_quad <= 0;
+     else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == ADDR_ACT_REG_LAST_QUAD ))
+         act_reg_last_quad <= s_axi_ctrl_reg_wdata;
 
 
 //==========================================
