@@ -3436,7 +3436,6 @@ parameter VAL_SIGNAL_STOP = 32'h1;
     .dout_eth_TKEEP               (dout_eth_TKEEP           ) ,
     .dout_eth_TUSER               (dout_eth_TUSER           ) ,
     .dout_eth_TLAST               (dout_eth_TLAST           ) ,
-    .eth_reset_V                  (eth_reset                ) ,
 `else
     .din_eth_TDATA                (dwrap_eth_TDATA          ) ,
     .din_eth_TVALID               (dwrap_eth_TVALID         ) ,
@@ -3452,7 +3451,6 @@ parameter VAL_SIGNAL_STOP = 32'h1;
     .dout_eth_TKEEP               (dwrap_eth_TKEEP          ) ,
     .dout_eth_TUSER               (dwrap_eth_TUSER          ) ,
     .dout_eth_TLAST               (dwrap_eth_TLAST[0]       ) ,
-    .eth_reset_V                  (                         ) ,
 //Enable ethernet with loopback
 `endif
 `endif
@@ -3545,6 +3543,16 @@ always @ (posedge ap_clk)
      else if (signal_stop && signal_stop_ack)
         signal_stop <= 0;
 
+// Issue Ethernet reset
+`ifdef ENABLE_ETHERNET
+`ifndef ENABLE_ETH_LOOP_BACK
+always @ (posedge ap_clk)
+    if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1)))
+        eth_reset <= 1;
+    else
+        eth_reset <= 0;
+`endif
+`endif
 
 //==========================================
 // Interrupt handshaking logic
