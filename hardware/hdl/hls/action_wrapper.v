@@ -3573,11 +3573,18 @@ always @ (posedge ap_clk)
 // Issue Ethernet reset
 `ifdef ENABLE_ETHERNET
 `ifndef ENABLE_ETH_LOOP_BACK
+reg [63:0] eth_reset_counter;
+
 always @ (posedge ap_clk)
-    if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1)))
+    if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1))) begin
         eth_reset <= 1;
+        eth_reset_counter <= 64'h0;
+    end
     else
-        eth_reset <= 0;
+    begin
+        eth_reset_counter <= eth_reset_counter + 64'h1;
+        if (eth_reset_counter > 64'h10) eth_reset <= 0;
+    end
 `endif
 `endif
 
