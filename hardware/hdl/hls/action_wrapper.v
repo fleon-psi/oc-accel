@@ -1668,7 +1668,6 @@ parameter ADDR_ACTION_TYPE = 32'h10;
 parameter ADDR_RELEASE_LEVEL = 32'h14;
 parameter ADDR_ACTION_INTERRUPT_SRC_ADDR_LO = 32'h18;
 parameter ADDR_ACTION_INTERRUPT_SRC_ADDR_HI = 32'h1C;
-parameter ADDR_ACT_REG_LAST_QUAD = 32'h17c;
 
 reg context_q;
 reg [31:0] interrupt_src_hi;
@@ -1825,12 +1824,16 @@ wire [0:0] dwrap_eth_TLAST;
 
 reg  [31:0] reg_rdata_hijack; //This will be ORed with the return data of hls_action
 wire [31:0] temp_s_axi_ctrl_reg_rdata;
-reg  [31:0] act_reg_last_quad;
+reg signal_stop;
+wire signal_stop_ack;
+parameter ADDR_SIGNAL = 32'h300;
+parameter VAL_SIGNAL_STOP = 32'h1;
 
  hls_action hls_action_0 (
     .ap_clk                       ( ap_clk                  ) ,
     .ap_rst_n                     ( hls_rst_n_q             ) ,
-    .act_reg_last_quad            ( act_reg_last_quad       ) ,
+    .signal_stop_V                ( signal_stop             ) ,
+    .signal_stop_ack              ( signal_stop_ack         ) ,
 `ifdef ENABLE_AXI_CARD_MEM
 `ifndef ENABLE_HBM
     .m_axi_card_mem0_araddr       (temp_card_mem0_araddr    ) ,
@@ -3532,12 +3535,15 @@ always @ (posedge ap_clk)
 //        context_q <= s_axi_ctrl_reg_wdata;
 
 
-// Save last quad of action register
+// Implement signals
 always @ (posedge ap_clk)
-     if (~ap_rst_n)
-         act_reg_last_quad <= 0;
-     else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == ADDR_ACT_REG_LAST_QUAD ))
-         act_reg_last_quad <= s_axi_ctrl_reg_wdata;
+    // Signals are cleared on reset, or when  action is started
+     if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1)))
+        signal_stop <= 0;
+     else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == ADDR_SIGNAL ) && (s_axi_ctrl_reg_wdata == VAL_SIGNAL_STOP))
+        signal_stop <= 1;
+     else if (signal_stop && signal_stop_ack)
+        signal_stop <= 0;
 
 
 //==========================================
