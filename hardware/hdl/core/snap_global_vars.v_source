@@ -36,6 +36,11 @@
 #endif
 
 ///////////////////////////////////////////////////
+#if defined(CONFIG_ACTION_RX100G)
+`define RX100G
+#endif
+
+///////////////////////////////////////////////////
 #if defined(CONFIG_ENABLE_ILA)
 `define ILA_DEBUG
 #endif

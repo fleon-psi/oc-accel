@@ -1824,6 +1824,8 @@ wire [0:0] dwrap_eth_TLAST;
 
 reg  [31:0] reg_rdata_hijack; //This will be ORed with the return data of hls_action
 wire [31:0] temp_s_axi_ctrl_reg_rdata;
+
+`ifdef RX100G
 reg signal_stop;
 wire signal_stop_ack;
 parameter ADDR_SIGNAL = 32'h300;
@@ -1837,10 +1839,12 @@ wire mmio_exchange_reg_ce;
 wire mmio_exchange_reg_we;
 wire [31:0] mmio_exchange_reg_q0;
 wire [31:0] mmio_exchange_reg_d0;
+`endif
 
  hls_action hls_action_0 (
     .ap_clk                       ( ap_clk                  ) ,
     .ap_rst_n                     ( hls_rst_n_q             ) ,
+`ifdef RX100G
     .signal_stop_V                ( signal_stop             ) ,
     .signal_stop_ack              ( signal_stop_ack         ) ,
     .mmio_exchange_reg_address    ( mmio_exchange_reg_address ),
@@ -1848,6 +1852,7 @@ wire [31:0] mmio_exchange_reg_d0;
     .mmio_exchange_reg_we         ( mmio_exchange_reg_we    ) ,
     .mmio_exchange_reg_q0         ( mmio_exchange_reg_q0    ) ,
     .mmio_exchange_reg_d0         ( mmio_exchange_reg_d0    ) ,
+`endif
 `ifdef ENABLE_AXI_CARD_MEM
 `ifndef ENABLE_HBM
     .m_axi_card_mem0_araddr       (temp_card_mem0_araddr    ) ,
@@ -3546,7 +3551,7 @@ always @ (posedge ap_clk)
 //    else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr = ADDR_CTX_ID_REG )
 //        context_q <= s_axi_ctrl_reg_wdata;
 
-
+`ifdef RX100G
 // Implement signals
 always @ (posedge ap_clk)
     // Signals are cleared on reset, or when  action is started
@@ -3556,6 +3561,14 @@ always @ (posedge ap_clk)
         signal_stop <= 1;
      else if (signal_stop && signal_stop_ack)
         signal_stop <= 0;
+
+always @ (posedge ap_clk)
+    if (mmio_exchange_reg_we)
+        mmio_exchange_reg[mmio_exchange_reg_address] <= mmio_exchange_reg_d0;
+    else
+        mmio_exchange_reg_q0 <= mmio_exchange_reg[mmio_exchange_reg_address];
+
+`endif
 
 // Issue Ethernet reset
 `ifdef ENABLE_ETHERNET
@@ -3567,12 +3580,6 @@ always @ (posedge ap_clk)
         eth_reset <= 0;
 `endif
 `endif
-
-always @ (posedge ap_clk)
-    if (mmio_exchange_reg_we)
-        mmio_exchange_reg[mmio_exchange_reg_address] <= mmio_exchange_reg_d0;
-    else
-        mmio_exchange_reg_q0 <= mmio_exchange_reg[mmio_exchange_reg_address];
 
 //==========================================
 // Interrupt handshaking logic
@@ -3619,10 +3626,12 @@ always @ (posedge ap_clk)
             reg_rdata_hijack <= `HLS_ACTION_TYPE;
         else if (s_axi_ctrl_reg_araddr == ADDR_RELEASE_LEVEL)
             reg_rdata_hijack <= `HLS_RELEASE_LEVEL;
+`ifdef RX100G
         else if (s_axi_ctrl_reg_araddr[31:0] & 32'hFF00 == ADDR_MMIO_EXCHANGE_REG)
 // One register = 4 byte, so ignoring last 2 bits of address gives register number
 // 2 bit (offset in register) + 6 bit (rgister number) = 8 bit address
             reg_rdata_hijack <= mmio_exchange_reg[s_axi_ctrl_reg_araddr[7:2]];
+`endif
         else
             reg_rdata_hijack <= 32'h0;
     end
