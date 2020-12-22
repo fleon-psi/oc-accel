@@ -1828,12 +1828,26 @@ reg signal_stop;
 wire signal_stop_ack;
 parameter ADDR_SIGNAL = 32'h300;
 parameter VAL_SIGNAL_STOP = 32'h1;
+parameter ADDR_MMIO_EXCHANGE_REG = 32'h400;
+parameter ADDR_WIDTH_MMIO_EXCHANGE_REG = 6;
+parameter SIZE_MMIO_EXCHANGE_REG = 64;
+reg [31:0] reg_mmio_exchange [SIZE_MMIO_EXCHANGE_REG];
+wire [ADDR_WIDTH_MMIO_EXCHANGE_REG - 1 : 0] mmio_exchange_reg_address;
+wire mmio_exchange_reg_ce;
+wire mmio_exchange_reg_we;
+wire [31:0] mmio_exchange_reg_q0;
+wire [31:0] mmio_exchange_reg_d0;
 
  hls_action hls_action_0 (
     .ap_clk                       ( ap_clk                  ) ,
     .ap_rst_n                     ( hls_rst_n_q             ) ,
     .signal_stop_V                ( signal_stop             ) ,
     .signal_stop_ack              ( signal_stop_ack         ) ,
+    .mmio_exchange_reg_address    ( mmio_exchange_reg_address ),
+    .mmio_exchange_reg_ce         ( mmio_exchange_reg_ce    ) ,
+    .mmio_exchange_reg_we         ( mmio_exchange_reg_we    ) ,
+    .mmio_exchange_reg_q0         ( mmio_exchange_reg_q0    ) ,
+    .mmio_exchange_reg_d0         ( mmio_exchange_reg_d0    ) ,
 `ifdef ENABLE_AXI_CARD_MEM
 `ifndef ENABLE_HBM
     .m_axi_card_mem0_araddr       (temp_card_mem0_araddr    ) ,
@@ -3554,6 +3568,12 @@ always @ (posedge ap_clk)
 `endif
 `endif
 
+always @ (posedge ap_clk)
+    if (mmio_exchange_reg_we)
+        mmio_exchange_reg[mmio_exchange_reg_address] <= mmio_exchange_reg_d0;
+    else
+        mmio_exchange_reg_q0 <= mmio_exchange_reg[mmio_exchange_reg_address];
+
 //==========================================
 // Interrupt handshaking logic
 always @ (posedge ap_clk)
@@ -3599,6 +3619,10 @@ always @ (posedge ap_clk)
             reg_rdata_hijack <= `HLS_ACTION_TYPE;
         else if (s_axi_ctrl_reg_araddr == ADDR_RELEASE_LEVEL)
             reg_rdata_hijack <= `HLS_RELEASE_LEVEL;
+        else if (s_axi_ctrl_reg_araddr[31:0] & 32'hFF00 == ADDR_MMIO_EXCHANGE_REG)
+// One register = 4 byte, so ignoring last 2 bits of address gives register number
+// 2 bit (offset in register) + 6 bit (rgister number) = 8 bit address
+            reg_rdata_hijack <= mmio_exchange_reg[s_axi_ctrl_reg_araddr[7:2]];
         else
             reg_rdata_hijack <= 32'h0;
     end
