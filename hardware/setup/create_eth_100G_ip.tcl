@@ -74,6 +74,8 @@ update_ip_catalog -rebuild -scan_changes
   set_property -dict [ list CONFIG.FREQ_HZ {200000000} ] $s_axis_tx
 
   # Create ports
+  set o_stat_rx_status [ create_bd_port -dir O stat_rx_status ]
+
   set i_capi_clk [ create_bd_port -dir I -type clk -freq_hz 200000000 i_capi_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {m_axis_rx:s_axis_tx} \
@@ -218,6 +220,7 @@ update_ip_catalog -rebuild -scan_changes
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net util_vector_logic_2_Res [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins util_vector_logic_2/Res]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axis_clock_converter_tx_0/s_axis_aresetn] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net cmac_usplus_0_stat_rx_status [get_bd_ports o_stat_rx_status] [get_bd_pins cmac_usplus_0/stat_rx_status]
 
 assign_bd_address
 regenerate_bd_layout

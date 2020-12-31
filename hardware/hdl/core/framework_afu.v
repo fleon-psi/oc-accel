@@ -2032,6 +2032,7 @@ module framework_afu (
   wire      [0:0] eth1_tx_tuser                       ;
 
   wire            eth_m_axis_rx_rst                   ;
+  wire            eth_stat_rx_status                  ;
 `endif
 `endif
 
@@ -4140,7 +4141,8 @@ module framework_afu (
       .dout_eth_tkeep                     ( eth1_tx_tkeep             ) ,
       .dout_eth_tuser                     ( eth1_tx_tuser             ) ,
       .dout_eth_tlast                     ( eth1_tx_tlast             ) ,
-      .eth_reset                          ( eth_m_axis_rx_rst         ) ,
+      .eth_rx_fifo_reset                  ( eth_m_axis_rx_rst         ) ,
+      .eth_stat_rx_status                 ( eth_stat_rx_status        ) ,
 `endif
 `endif
       //
@@ -6595,7 +6597,8 @@ eth_100G eth_100G_0
       .i_ctl_rx_enable             ( 1'b1                          ),
       .i_ctl_rx_rsfec_enable       ( 1'b1                          ),
       .i_ctl_tx_enable             ( 1'b1                          ),
-      .i_ctl_tx_rsfec_enable       ( 1'b1                          )
+      .i_ctl_tx_rsfec_enable       ( 1'b1                          ),
+      .o_stat_rx_status            ( eth_stat_rx_status            )
 );
 
 `endif
