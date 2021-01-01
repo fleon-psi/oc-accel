@@ -1612,7 +1612,8 @@ module action_wrapper (
    output [  63 : 0]                        dout_eth_TKEEP    ,
    output [   0 : 0]                        dout_eth_TUSER    ,
    output                                   dout_eth_TLAST    ,
-   output                                   eth_reset         ,
+   output                                   eth_rx_fifo_reset ,
+   input                                    eth_stat_rx_status ,
 `endif
 `endif
     //
@@ -3586,7 +3587,7 @@ always @ (posedge ap_clk)
         if (eth_reset_counter == 4'hF) eth_reset_val <= 0;
     end
 
-assign eth_reset = eth_reset_val;
+assign eth_rx_fifo_reset = eth_reset_val;
 
 `endif
 `endif
