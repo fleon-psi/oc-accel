@@ -1,5 +1,6 @@
 /*
  * Copyright 2019 International Business Machines
+ * Copyright 2020 Paul Scherrer Institute
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1827,32 +1828,42 @@ reg  [31:0] reg_rdata_hijack; //This will be ORed with the return data of hls_ac
 wire [31:0] temp_s_axi_ctrl_reg_rdata;
 
 `ifdef RX100G
-reg signal_stop;
+
+// Signal stop
+reg reg_signal_stop;
 wire signal_stop_ack;
 parameter ADDR_SIGNAL = 32'h300;
 parameter VAL_SIGNAL_STOP = 32'h1;
+
+// Ethernet RX status
+reg reg_eth_stat_rx_status;
+parameter ADDR_ETH_RX_STATUS = 32'h304;
+
+// MMIO register
 parameter ADDR_MMIO_EXCHANGE_REG = 32'h400;
 parameter ADDR_WIDTH_MMIO_EXCHANGE_REG = 6;
 parameter SIZE_MMIO_EXCHANGE_REG = 64;
-reg [31:0] reg_mmio_exchange [SIZE_MMIO_EXCHANGE_REG];
+reg [31:0] mmio_exchange_reg [SIZE_MMIO_EXCHANGE_REG : 0];
 wire [ADDR_WIDTH_MMIO_EXCHANGE_REG - 1 : 0] mmio_exchange_reg_address;
 wire mmio_exchange_reg_ce;
 wire mmio_exchange_reg_we;
-reg [31:0] mmio_exchange_reg_q0;
-wire [31:0] mmio_exchange_reg_d0;
+wire [31:0] mmio_exchange_reg_d;
+
+ // Ethernet RX FIFO reset counter
+ reg [3:0] eth_reset_counter;
+ reg       reg_eth_rx_fifo_reset;
 `endif
 
  hls_action hls_action_0 (
     .ap_clk                       ( ap_clk                  ) ,
     .ap_rst_n                     ( hls_rst_n_q             ) ,
 `ifdef RX100G
-    .signal_stop_V                ( signal_stop             ) ,
+    .signal_stop_V                ( reg_signal_stop         ) ,
     .signal_stop_V_ap_ack         ( signal_stop_ack         ) ,
     .mmio_exchange_reg_address0   ( mmio_exchange_reg_address ),
     .mmio_exchange_reg_ce0        ( mmio_exchange_reg_ce    ) ,
     .mmio_exchange_reg_we0        ( mmio_exchange_reg_we    ) ,
-    .mmio_exchange_reg_d0         ( mmio_exchange_reg_d0    ) ,
-    .mmio_exchange_reg_q0         ( mmio_exchange_reg_q0    ) ,
+    .mmio_exchange_reg_d0         ( mmio_exchange_reg_d     ) ,
 `endif
 `ifdef ENABLE_AXI_CARD_MEM
 `ifndef ENABLE_HBM
@@ -3456,6 +3467,9 @@ wire [31:0] mmio_exchange_reg_d0;
     .dout_eth_TKEEP               (dout_eth_TKEEP           ) ,
     .dout_eth_TUSER               (dout_eth_TUSER           ) ,
     .dout_eth_TLAST               (dout_eth_TLAST           ) ,
+`ifndef RX100G
+    .eth_reset_V                  (eth_rx_fifo_reset        ) ,
+`endif
 `else
     .din_eth_TDATA                (dwrap_eth_TDATA          ) ,
     .din_eth_TVALID               (dwrap_eth_TVALID         ) ,
@@ -3471,6 +3485,9 @@ wire [31:0] mmio_exchange_reg_d0;
     .dout_eth_TKEEP               (dwrap_eth_TKEEP          ) ,
     .dout_eth_TUSER               (dwrap_eth_TUSER          ) ,
     .dout_eth_TLAST               (dwrap_eth_TLAST[0]       ) ,
+`ifndef RX100G
+    .eth_reset_V                  (                         ) ,
+`endif
 //Enable ethernet with loopback
 `endif
 `endif
@@ -3553,43 +3570,39 @@ always @ (posedge ap_clk)
 //        context_q <= s_axi_ctrl_reg_wdata;
 
 `ifdef RX100G
-// Implement signals
-always @ (posedge ap_clk)
-    // Signals are cleared on reset, or when  action is started
-     if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1)))
-        signal_stop <= 0;
-     else if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == ADDR_SIGNAL ) && (s_axi_ctrl_reg_wdata == VAL_SIGNAL_STOP))
-        signal_stop <= 1;
-     else if (signal_stop && signal_stop_ack)
-        signal_stop <= 0;
+// Save current 100G RX status into register
+    always @ (posedge ap_clk)
+        reg_eth_stat_rx_status <= eth_stat_rx_status;
 
-always @ (posedge ap_clk)
-    if (mmio_exchange_reg_ce && mmio_exchange_reg_we)
-        mmio_exchange_reg[mmio_exchange_reg_address] <= mmio_exchange_reg_d0;
-    else
-        mmio_exchange_reg_q0 <= mmio_exchange_reg[mmio_exchange_reg_address];
-`endif
+    always @ (posedge ap_clk)
+        // Signals are cleared and ETH RX FIFO is reset for 16 cycles, when action reset is issued, or when action is started
+        if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1)))
+            begin
+            reg_signal_stop <= 0;
+            reg_eth_rx_fifo_reset <= 1;
+            eth_reset_counter <= 4'h0;
+            end
+        else
+            begin
+            eth_reset_counter <= eth_reset_counter + 4'h1;
+            if (eth_reset_counter == 4'd15)
+                reg_eth_rx_fifo_reset <= 0;
 
-// Issue Ethernet reset
-`ifdef ENABLE_ETHERNET
-`ifndef ENABLE_ETH_LOOP_BACK
-reg [3:0] eth_reset_counter;
-reg eth_reset_val;
+            if (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == ADDR_SIGNAL ) && (s_axi_ctrl_reg_wdata == VAL_SIGNAL_STOP))
+                reg_signal_stop <= 1;
+            else if (reg_signal_stop && signal_stop_ack)
+                reg_signal_stop <= 0;
+            end
 
-always @ (posedge ap_clk)
-    if (~ap_rst_n || (s_axi_ctrl_reg_wvalid && (s_axi_ctrl_reg_awaddr == 32'h0 ) && (s_axi_ctrl_reg_wdata == 32'h1))) begin
-        eth_reset_val <= 1;
-        eth_reset_counter <= 4'h0;
-    end
-    else
-    begin
-        eth_reset_counter <= eth_reset_counter + 4'h1;
-        if (eth_reset_counter == 4'hF) eth_reset_val <= 0;
-    end
+    // Write to MMIO register from action module
+    always @ (posedge ap_clk)
+        if (~ap_rst_n)
+            mmio_exchange_reg[0] <= 0;
+        else if (mmio_exchange_reg_ce && mmio_exchange_reg_we)
+            mmio_exchange_reg[mmio_exchange_reg_address] <= mmio_exchange_reg_d;
 
-assign eth_rx_fifo_reset = eth_reset_val;
+    assign eth_rx_fifo_reset = reg_eth_rx_fifo_reset;
 
-`endif
 `endif
 
 //==========================================
@@ -3638,9 +3651,11 @@ always @ (posedge ap_clk)
         else if (s_axi_ctrl_reg_araddr == ADDR_RELEASE_LEVEL)
             reg_rdata_hijack <= `HLS_RELEASE_LEVEL;
 `ifdef RX100G
+        else if (s_axi_ctrl_reg_araddr  == ADDR_ETH_RX_STATUS)
+            reg_rdata_hijack <= reg_eth_stat_rx_status;
         else if ((s_axi_ctrl_reg_araddr[31:0] & 32'hFF00) == ADDR_MMIO_EXCHANGE_REG)
-// One register = 4 byte, so ignoring last 2 bits of address gives register number
-// 2 bit (offset in register) + 6 bit (rgister number) = 8 bit address
+            // One register = 4 byte, so ignoring last 2 bits of address gives register number
+            // 6 bit (register number) + 2 bit (offset in register; ignore) = 8 bit address
             reg_rdata_hijack <= mmio_exchange_reg[s_axi_ctrl_reg_araddr[7:2]];
 `endif
         else
