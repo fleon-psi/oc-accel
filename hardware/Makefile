@@ -241,31 +241,6 @@ action_hw: prepare_logs
 	fi
 	@echo -e "[CONFIG ACTION HW....] done  `date +"%T %a %b %d %Y"`";
 
-.create_ethernet_done:
-	@echo -e "[CREATE ETHERNET IP..] start `date +"%T %a %b %d %Y"`";
-	@rm -rf $(SNAP_HARDWARE_ROOT)/ip/eth_100G
-	echo "Calling create_eth_100G TCL script" >> $(LOGS_DIR)/eth_100G_make.log; 
-	@if [ "$(ENABLE_EMAC_V3_1)" == "TRUE" ]; then \
-		if [ $(VIVADO_MAJOR_RELEASE) -gt "2019" ]; then \
-			echo -e "			generating 100G Ethernet IP V3.1"; \
-		else \
-			echo -e "##ERROR: Vivado $(VIVADO_MAJOR_RELEASE) is incompatible with  100G Ethernet IP V3.1"; \
-			echo -e "    Please rerun 'make snap_config' to set correctly the variables"; \
-			exit -1; \
-		fi; \
-	else \
-		if [ $(VIVADO_MAJOR_RELEASE) -gt "2019" ]; then \
-			echo -e "##ERROR: Vivado $(VIVADO_MAJOR_RELEASE) is incompatible with  100G Ethernet IP V3.0"; \
-			echo -e "    Please rerun 'make snap_config' to set correctly the variables"; \
-			exit -1; \
-		else \
-			echo -e "			generating 100G Ethernet IP V3.0"; \
-		fi; \
-	fi
-	@cd $(BUILD_DIR)  &&  vivado -quiet -mode batch -source $(SETUP_DIR)/create_eth_100G_ip.tcl -notrace -log $(LOGS_DIR)/eth_100G_make.log -journal $(LOGS_DIR)/eth_100G_make.jou >> $(LOGS_DIR)/eth_100G_make.log; 
-	@echo -e "[CREATE ETHERNET IP..] done `date +"%T %a %b %d %Y"`";
-	@touch .create_ethernet_done
-
 .create_snap_ip_done:
 	@cd $(BUILD_DIR)  &&  vivado -quiet -mode batch -source $(SETUP_DIR)/create_snap_ip.tcl        -notrace -log $(LOGS_DIR)/create_snap_ip.log         -journal $(LOGS_DIR)/create_snap_ip.jou
 	@touch .create_snap_ip_done
@@ -291,7 +266,6 @@ create_project: snap_preprocess
 	@$(MAKE) -s .create_snap_ip_done
 	@$(MAKE) -s create_hls_ip
 	@$(MAKE) -s patch_version
-	@if [ "$(ETHERNET_USED)" == "TRUE" ] && [ "$(ETH_LOOP_BACK)" == "FALSE" ]; then $(MAKE) -s .create_ethernet_done; fi
 	@if [ "$(HBM_USED)" == "TRUE" ]; then $(MAKE) -s .create_hbm_done; fi
 	@cd $(BUILD_DIR)  &&  vivado -quiet -mode batch -source $(SETUP_DIR)/create_framework.tcl -notrace -log $(LOGS_DIR)/create_framework.log  -journal $(LOGS_DIR)/create_framework.jou
 	@echo -e "[CREATE PROJECT......] done  `date +"%T %a %b %d %Y"`"
