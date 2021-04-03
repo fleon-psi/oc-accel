@@ -124,7 +124,7 @@ if { $hbm_axi_if_num <= 16 } {
     CONFIG.USER_HBM_STACK {1}                            \
     CONFIG.USER_CLK_SEL_LIST0 {AXI_00_ACLK}              \
     ] $cell >> $log_file
-    if { $fpga_card == "AD9H3" } {
+    if { ($fpga_card == "AD9H3") || ($fpga_card == "AD9H335")} {
     set_property -dict [list                             \
       CONFIG.USER_SINGLE_STACK_SELECTION {RIGHT}         \
       ] $cell >> $log_file
