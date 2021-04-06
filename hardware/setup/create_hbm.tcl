@@ -117,7 +117,6 @@ set_property -dict [list                               \
   CONFIG.USER_XSDB_INTF_EN {FALSE}                     \
   ] $cell >> $log_file
 
-# if less or equal than 16 HBM then 1 stack used
 if { $hbm_axi_if_num <= 16 } {
   set_property -dict [list                               \
     CONFIG.USER_HBM_DENSITY {4GB}                        \
@@ -379,3 +378,4 @@ make_wrapper -files [get_files $root_dir/ip/hbm/hbm.srcs/sources_1/bd/hbm_top/hb
 
 #Close the project
 close_project >> $log_file
+
