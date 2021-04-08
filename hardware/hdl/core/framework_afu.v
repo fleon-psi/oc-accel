@@ -582,6 +582,8 @@ module framework_afu (
   `else
 // ifdef ENABLE_HBM => HBM
   wire                                    hbm_ctrl_apb_complete ;
+  wire [6:0]                              hbm_temperature;
+  wire                                    hbm_temp_trip;
 
   `ifdef HBM_AXI_IF_P0
   wire [ `AXI_CARD_HBM_ADDR_WIDTH-1 : 0 ]  act_axi_card_hbm_p0_awaddr    ;
@@ -4139,6 +4141,8 @@ module framework_afu (
       .m_axi_card_hbm_p31_wuser              (                            ) ,
       .m_axi_card_hbm_p31_wvalid             ( act_axi_card_hbm_p31_wvalid   ) ,
       `endif
+      .hbm_temperature                       ( hbm_temperature               ) ,
+      .hbm_temp_trip                         ( hbm_temp_trip                 ) ,
 `endif
 `endif
 
@@ -6399,6 +6403,8 @@ block_RAM block_ram_i1
       `endif
 
 //common signals
+      .temp                     ( hbm_temperature             ) ,
+      .cattrip                  ( hbm_temp_trip               ) ,
       .apb_complete             ( hbm_ctrl_apb_complete       ) ,
       .cresetn                  ( hbm_ctrl_reset_n            ) ,
       .aresetn                  ( ~reset_action_q             )
