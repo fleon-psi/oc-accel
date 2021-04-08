@@ -282,6 +282,11 @@ connect_bd_net [get_bd_pins constant_1_zero/dout] [get_bd_pins hbm/APB_1_PWRITE]
 set port [create_bd_port -dir O apb_complete]
 connect_bd_net [get_bd_ports apb_complete] [get_bd_pins hbm/apb_complete_0]
 
+set port [ create_bd_port -dir O -from 6 -to 0 temp ]
+set port [ create_bd_port -dir O cattrip ]
+connect_bd_net [get_bd_ports temp] [get_bd_pins hbm/DRAM_0_STAT_TEMP]
+connect_bd_net [get_bd_ports cattrip] [get_bd_pins hbm/DRAM_0_STAT_CATTRIP]
+
 #====================
 #-- Set the upper bound of the loop to the number of memory you use --
 
