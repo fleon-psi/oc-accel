@@ -298,17 +298,17 @@ for {set i 0} {$i < $hbm_axi_if_num} {incr i} {
 
   #create the axi_register_slice converters
   #REG param is set to 10 for SLR crossing and 15 for multi-SLR crossing (auto pipeline)
-  set cell [create_bd_cell -type ip -vlnv {xilinx.com:ip:axi_register_slice:*} axi_register_slice_$i ]
-  set_property -dict {     \
-    CONFIG.ADDR_WIDTH {34}              \
-    CONFIG.DATA_WIDTH {256}             \
-    CONFIG.ID_WIDTH {6}                 \
-    CONFIG.REG_AW {10}                  \
-    CONFIG.REG_AR {10}                  \
-    CONFIG.REG_W {10}                   \
-    CONFIG.REG_R {10}                   \
-    CONFIG.REG_B {10}                   \
-    }  $cell
+  #set cell [create_bd_cell -type ip -vlnv {xilinx.com:ip:axi_register_slice:*} axi_register_slice_$i ]
+  #set_property -dict {     \
+  #  CONFIG.ADDR_WIDTH {34}              \
+  #  CONFIG.DATA_WIDTH {256}             \
+  #  CONFIG.ID_WIDTH {6}                 \
+  #  CONFIG.REG_AW {10}                  \
+  #  CONFIG.REG_AR {10}                  \
+  #  CONFIG.REG_W {10}                   \
+  #  CONFIG.REG_R {10}                   \
+  #  CONFIG.REG_B {10}                   \
+  #  }  $cell
 
   #create the ports
   create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_p$i\_HBM
@@ -333,20 +333,20 @@ for {set i 0} {$i < $hbm_axi_if_num} {incr i} {
   connect_bd_net [get_bd_pins CRESETN] [get_bd_pins axi4_to_axi3_$i/aresetn]
   
   #connect axi4_to_axi3 to axi_register_slice
-  connect_bd_net [get_bd_ports CRESETN] [get_bd_pins axi_register_slice_$i\/aresetn]
-  connect_bd_net [get_bd_ports S_AXI_p$i\_HBM_ACLK] [get_bd_pins axi_register_slice_$i\/aclk]
-  connect_bd_intf_net [get_bd_intf_pins axi4_to_axi3_$i/M_AXI] [get_bd_intf_pins axi_register_slice_$i/S_AXI]
+  #connect_bd_net [get_bd_ports CRESETN] [get_bd_pins axi_register_slice_$i\/aresetn]
+  #connect_bd_net [get_bd_ports S_AXI_p$i\_HBM_ACLK] [get_bd_pins axi_register_slice_$i\/aclk]
+  #connect_bd_intf_net [get_bd_intf_pins axi4_to_axi3_$i/M_AXI] [get_bd_intf_pins axi_register_slice_$i/S_AXI]
 
   #connect axi_register_slice to hbm
   #Manage 1 vs 2 digits
   if { $i < 10} {
     connect_bd_net [get_bd_pins ARESETN] [get_bd_pins hbm/AXI_0$i\_ARESET_N]
     connect_bd_net [get_bd_pins axi4_to_axi3_$i/aclk] [get_bd_pins hbm/AXI_0$i\_ACLK]
-    connect_bd_intf_net [get_bd_intf_pins axi_register_slice_$i\/M_AXI] [get_bd_intf_pins hbm/SAXI_0$i]
+    connect_bd_intf_net [get_bd_intf_pins axi4_to_axi3_$i\/M_AXI] [get_bd_intf_pins hbm/SAXI_0$i]
   } else {
     connect_bd_net [get_bd_pins ARESETN] [get_bd_pins hbm/AXI_$i\_ARESET_N]
     connect_bd_net [get_bd_pins axi4_to_axi3_$i/aclk] [get_bd_pins hbm/AXI_$i\_ACLK]
-    connect_bd_intf_net [get_bd_intf_pins axi_register_slice_$i\/M_AXI] [get_bd_intf_pins hbm/SAXI_$i]
+    connect_bd_intf_net [get_bd_intf_pins axi4_to_axi3_$i\/M_AXI] [get_bd_intf_pins hbm/SAXI_$i]
   }
 }
 #--------------------- end loop ------------------
