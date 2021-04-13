@@ -114,7 +114,7 @@ set cell [create_bd_cell -quiet -type ip -vlnv {xilinx.com:ip:hbm:*} hbm]
 set_property -dict [list                               \
   CONFIG.USER_AUTO_POPULATE {yes}                      \
   CONFIG.USER_SWITCH_ENABLE_00 {FALSE}                 \
-  CONFIG.USER_XSDB_INTF_EN {FALSE}                     \
+  CONFIG.USER_XSDB_INTF_EN {TRUE}                      \
   ] $cell >> $log_file
 
 if { $hbm_axi_if_num <= 16 } {
