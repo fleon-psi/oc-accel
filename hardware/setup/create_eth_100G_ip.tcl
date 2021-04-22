@@ -118,7 +118,6 @@ update_ip_catalog -rebuild -scan_changes
   set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:2.0 axis_data_fifo_1 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH $rx_fifo_depth \
-   CONFIG.ENABLE_ECC {1} \
  ] $axis_data_fifo_1
 
   if  { [info exists ::env(ETHERNET_RX_FIFO_URAM)] == 1 } {
