@@ -278,6 +278,8 @@ module oc_function (
     , output                 avr_tx
     , input                  avr_ck
 `endif
+    , input                  aux_clk_n
+    , input                  aux_clk_p
 );
 
 // ==============================================================================================================================
@@ -585,7 +587,8 @@ framework_afu  fw_afu
       .avr_tx          (avr_tx              ),
       .avr_ck          (avr_ck              ),
     `endif
-
+      .aux_clk_n       (aux_clk_n           ),
+      .aux_clk_p       (aux_clk_p           ),
       // -- AFU Index
       .afu_index                           ( 6'b000000 ),                                 // -- input   // -- This AFU is number 0                                                      
                                                                                          

@@ -279,6 +279,8 @@ module framework_afu (
     , output                 avr_tx
     , input                  avr_ck
 `endif
+    , input                  aux_clk_n
+    , input                  aux_clk_p
   );
 
   // // ******************************************************************************
@@ -4158,6 +4160,8 @@ module framework_afu (
       .uc_avr_tx       ( avr_tx             ),
       .uc_avr_ck       ( avr_ck             ),
  `endif
+      .refclk300_n     ( aux_clk_n          ),
+      .refclk300_p     ( aux_clk_p          ),
 
       //
       // AXI Control Register Interface

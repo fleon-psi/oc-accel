@@ -1,3 +1,4 @@
 [submodule "hardware/oc-bip"]
 	path = hardware/oc-bip
-	url = https://github.com/opencapi/OpenCAPI3.0_Client_RefDesign.git
+	url = git@github.com:fleon-psi/OpenCAPI3.0_Client_RefDesign.git
+        branch = jungfraujoch
